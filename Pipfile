@@ -1,0 +1,44 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+alembic = "*"
+loguru = "*"
+apscheduler = "*"
+fastapi = "*"
+dependency-injector = "==4.39.1"
+
+[dev-packages]
+# for mypy checking (python 3.4+ is needed)
+pyls-mypy="*"
+# pyls-isort Isort import sort code formatting
+pyls-isort="*"
+# pyls-black for code formatting using Black
+pyls-black=">=0.4.6"
+# other python related emacs staff ====
+autopep8 = "==1.5.5"
+autoflake = "*"
+flake8 = "==3.8.4"
+# Install importmagic and epc for importmagic functionality. ===
+epc = "*"
+importmagic = "*"
+# dap-mode debugger (only for lsp backend) ===
+ptvsd = ">=4.2"
+# probably unnecessary python emacs staff ====
+isort = "*"
+mypy = "*"
+python-language-server = {extras = ["all"],version = "*"}
+black = "==22.3.0"
+pytest = "*"
+pytest-asyncio = "*"
+python-dotenv = "*"
+factory-boy = "*"
+aiosqlite = "*"
+
+[requires]
+python_version = "3.9"
+
+[pipenv]
+allow_prereleases = true
