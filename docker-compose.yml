@@ -1,0 +1,114 @@
+version: '3.8'
+
+x-log-rotation: &log-rotation
+  # driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "3"
+
+services:
+  db:
+    image: postgres:11
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:-pass}
+      POSTGRES_DB: jaxel
+      POSTGRES_USER: jaxel
+    networks:
+      - db
+    restart: on-failure
+    logging:
+      <<: *log-rotation
+    ports:
+      - "5001:5432"
+
+  db_migrate:
+    image: p2p_bot:dev
+    restart: on-failure
+    networks:
+      - db
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:-pass}
+      POSTGRES_DB: jaxel
+      POSTGRES_HOST: db
+      POSTGRES_USER: jaxel
+    logging:
+      <<: *log-rotation
+    command: pipenv run alembic upgrade head
+  #===================app=======================
+  poller:
+    image: trial:dev
+    restart: on-failure
+    networks:
+      - kafka
+    depends_on:
+      - broker
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:-pass}
+      POSTGRES_DB: jaxel
+      POSTGRES_USER: jaxel
+      INTERVAL: ${INTERVAL:-5}
+    logging:
+      <<: *log-rotation
+    command: pipenv run python src/trial/poll_main.py
+
+  saver:
+    image: trial:dev
+    restart: on-failure
+    networks:
+      - db
+      - kafka
+    depends_on:
+      - db
+      - broker
+    ports:
+      - "8000:8000"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASS:-pass}
+      POSTGRES_DB: jaxel
+      POSTGRES_USER: jaxel
+    logging:
+      <<: *log-rotation
+    command: pipenv run uvicorn trial.save_main:app --host 0.0.0.0
+  #===================kafka=======================
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.0.1
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - kafka
+
+  broker:
+    image: confluentinc/cp-kafka:7.0.5.arm64
+    container_name: broker
+    ports:
+      - "9092:9092"
+    networks:
+      - kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:9092,PLAINTEXT_INTERNAL://broker:29092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+networks:
+  db:
+  kafka:

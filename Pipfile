@@ -4,11 +4,17 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-alembic = "*"
 loguru = "*"
 apscheduler = "*"
 fastapi = "*"
-dependency-injector = "==4.39.1"
+aiokafka = "*"
+aerich = "*"
+asyncpg = "*"
+alembic = "*"
+uvicorn = "*"
+aiohttp = "==3.8.1"
+sqlalchemy = {extras = ["asyncio"], version = "*"}
+psycopg2-binary = "*"
 
 [dev-packages]
 # for mypy checking (python 3.4+ is needed)
